@@ -19,7 +19,7 @@ from utils.utils_fit import fit_one_epoch
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
     # ---------- 数据集超参数 -----------
-    data_path="../../dataset/SUIMdevkit_mini",  # dataset root
+    data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
     backbone="resnet50",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
@@ -37,11 +37,11 @@ model_cfg = dict(
     sync_bn=False,  # 是否使用sync_bn，DDP模式多卡可用
     # ---------- 训练Epoch和Batch size超参数 ----------
     freeze_train=False,
-    freeze_batch_size=8,
-    unfreeze_batch_size=8,
+    freeze_batch_size=16,
+    unfreeze_batch_size=16,
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=20,
+    unfreeze_epochs=500,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",
     init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
@@ -52,10 +52,10 @@ model_cfg = dict(
     dice_loss=False,
     focal_loss=False,
     # ---------- 模型验证和保存的超参数 ----------
-    save_freq=5,
+    save_freq=10,
     save_dir="./logs",
     eval_flag=True,  # 是否在训练时进行评估，评估对象为验证集
-    eval_period=5,  # 评估周期
+    eval_period=10,  # 评估周期
 )
 
 

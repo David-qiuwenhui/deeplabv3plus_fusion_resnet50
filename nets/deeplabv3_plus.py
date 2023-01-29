@@ -261,10 +261,11 @@ class DeepLab(nn.Module):
         #   low_level_features: 浅层特征-进行卷积处理 (B, 256, H/4, W/4)  处理4倍下采样feature maps
         #   x : 主干部分-利用ASPP结构进行加强特征提取 (B, 2048, H/8, W/8)  处理8倍下采样feature maps
         # -----------------------------------------#
-        # low_level_features, x = self.backbone(x)
+
         features = self.backbone(x)
         low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
         x = features["main"]  # (B, 2048, H/8, W/8)
+        # low_level_features, x = self.backbone(x)
 
         x = self.aspp(x)  # x(bs, 256, 64, 64)
         low_level_features = self.shortcut_conv(

@@ -309,8 +309,8 @@ def resnet50_backbone(pretrained=False):
     )  # 下采样率为8倍  layer0/1/2进行下采样，layer3/4进行膨胀卷积
     if pretrained:
         backbone.load_state_dict(torch.load("./pre_weights/resnet50_imagenet.pth"))
-    main_inplanes = 2048
-    low_inplanes = 256
+    # main_inplanes = 2048
+    # low_inplanes = 256
 
     return_layers = {
         "layer1": "low_features",
