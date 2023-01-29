@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from nets.resnet import resnet50_backbone
 from nets.xception import xception
 from nets.mobilenetv2 import mobilenetv2
 
@@ -197,6 +198,16 @@ class DeepLab(nn.Module):
             self.backbone = MobileNetV2(pretrained, downsample_factor)
             in_channels = 320  # 主干部分的特征(320,30,30)
             low_level_channels = 24  # 浅层特征(24,128,128)
+        elif backbone == "resnet50":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分
+            #   浅层特征
+            # ----------------------------------#
+            self.backbone = resnet50_backbone(pretrained)
+            in_channels = 2048  # 主干部分的特征
+            low_level_channels = 256  # 浅层次特征
+
         else:
             raise ValueError(
                 "Unsupported backbone - `{}`, Use mobilenet, xception.".format(backbone)
@@ -244,15 +255,17 @@ class DeepLab(nn.Module):
         )
 
     def forward(self, x):
-        H, W = x.size(2), x.size(3)  # x(bs,3,512,512)
+        H, W = x.size(2), x.size(3)  # x(bs,3,H,W)
         # -----------------------------------------#
         #   特征提取 获得两个特征层
-        #   low_level_features: 浅层特征-进行卷积处理 (bs, 256, 128, 128)  处理4倍下采样feature maps
-        #   x : 主干部分-利用ASPP结构进行加强特征提取 (bs, 2048, 64, 64)  处理8倍下采样feature maps
+        #   low_level_features: 浅层特征-进行卷积处理 (B, 256, H/4, W/4)  处理4倍下采样feature maps
+        #   x : 主干部分-利用ASPP结构进行加强特征提取 (B, 2048, H/8, W/8)  处理8倍下采样feature maps
         # -----------------------------------------#
-        low_level_features, x = self.backbone(
-            x
-        )  # low_level_features(bs, 256, 128, 128)  x(bs, 2048, 64, 64)
+        # low_level_features, x = self.backbone(x)
+        features = self.backbone(x)
+        low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
+        x = features["main"]  # (B, 2048, H/8, W/8)
+
         x = self.aspp(x)  # x(bs, 256, 64, 64)
         low_level_features = self.shortcut_conv(
             low_level_features
