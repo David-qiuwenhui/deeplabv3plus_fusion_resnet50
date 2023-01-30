@@ -19,16 +19,14 @@ from utils.utils_fit import fit_one_epoch
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
     # ---------- 数据集超参数 -----------
-    data_path="../../dataset/SUIMdevkit",  # dataset root
+    data_path="../../dataset/SUIMdevkit_mini",  # dataset root
     # ---------- 卷积模型超参数 ----------
-    backbone="resnext50",  #  所使用的的主干网络 "mobilenet", "xception"
+    backbone="repvgg",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
     downsample_factor=8,
     aux_branch=None,  # auxilier loss
-    # pretrained_model = False,
     pretrained_backbone=False,
-    model_path="",
     backbone_path="",
     # ---------- 硬件的超参数 ----------
     cuda=True,
@@ -39,9 +37,10 @@ model_cfg = dict(
     freeze_train=False,
     freeze_batch_size=16,
     unfreeze_batch_size=16,
+    model_path="",
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=500,
+    unfreeze_epochs=20,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",
     init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
@@ -69,12 +68,12 @@ def main(model_cfg):
     # ---------- 卷积模型超参数 ----------
     num_classes = model_cfg["num_classes"]  # num_classes + background
     backbone = model_cfg["backbone"]
-    pretrained = model_cfg["pretrained_backbone"]  # 使用主干网络预训练
-    model_path = model_cfg["model_path"]
+    pretrained = model_cfg["pretrained_backbone"]  # 是否使用主干网络预训练权重
     backbone_path = model_cfg["backbone_path"]
 
     downsample_factor = model_cfg["downsample_factor"]
     input_shape = model_cfg["input_shape"]  # 输入图片的大小
+    model_path = model_cfg["model_path"]  # 卷积模型的预训练权重
     Init_Epoch = model_cfg["init_epoch"]
     Freeze_Epoch = model_cfg["freeze_epochs"]
     Freeze_batch_size = model_cfg["freeze_batch_size"]

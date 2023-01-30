@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from nets.repvgg import repvgg_backbone
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
 from nets.xception import xception
@@ -188,6 +189,7 @@ class DeepLab(nn.Module):
         backbone_path="",
     ):
         super(DeepLab, self).__init__()
+        self.backbone = backbone
         if backbone == "xception":
             # ----------------------------------#
             #   获得两个特征层
@@ -217,17 +219,28 @@ class DeepLab(nn.Module):
             low_level_channels = 256  # 浅层次特征
 
         elif backbone == "resnext50":
-            self.backbone = resnext50_32x4d_backbone(
-                pretrained=False, downsample_factor=8
-            )
             # ----------------------------------#
             #   获得两个特征层
             #   主干部分    [2048,H/8,W/8]
             #   浅层特征    [256,H/4,W/4]
             # ----------------------------------#
+            self.backbone = resnext50_32x4d_backbone(
+                pretrained=False, downsample_factor=8
+            )
+
             in_channels = 2048  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征
 
+        elif backbone == "repvgg":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [2560,H/8,W/8]
+            #   浅层特征    [320,H/4,W/4]
+            # ----------------------------------#
+            self.backbone = repvgg_backbone(model_type="repvgg_B2g4_new")
+
+            in_channels = 2560  # 主干部分的特征
+            low_level_channels = 320  # 浅层次特征
         else:
             raise ValueError(
                 "Unsupported backbone - `{}`, Use mobilenet, xception.".format(backbone)
@@ -282,10 +295,12 @@ class DeepLab(nn.Module):
         #   x : 主干部分-利用ASPP结构进行加强特征提取 (B, 2048, H/8, W/8)  处理8倍下采样feature maps
         # -----------------------------------------#
 
-        features = self.backbone(x)
-        low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
-        x = features["main"]  # (B, 2048, H/8, W/8)
-        # low_level_features, x = self.backbone(x)
+        if self.backbone in ["xception", "mobilenet", "repvgg"]:
+            low_level_features, x = self.backbone(x)
+        elif self.backbone in ["resnet50", "resnext50"]:
+            features = self.backbone(x)
+            low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
+            x = features["main"]  # (B, 2048, H/8, W/8)
 
         x = self.aspp(x)  # x(bs, 256, 64, 64)
         low_level_features = self.shortcut_conv(
