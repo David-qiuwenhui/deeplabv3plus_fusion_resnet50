@@ -21,7 +21,7 @@ model_cfg = dict(
     # ---------- 数据集超参数 -----------
     data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
-    backbone="resnet50",  #  所使用的的主干网络 "mobilenet", "xception"
+    backbone="resnext50",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
     downsample_factor=8,
@@ -71,6 +71,8 @@ def main(model_cfg):
     backbone = model_cfg["backbone"]
     pretrained = model_cfg["pretrained_backbone"]  # 使用主干网络预训练
     model_path = model_cfg["model_path"]
+    backbone_path = model_cfg["backbone_path"]
+
     downsample_factor = model_cfg["downsample_factor"]
     input_shape = model_cfg["input_shape"]  # 输入图片的大小
     Init_Epoch = model_cfg["init_epoch"]
@@ -134,12 +136,7 @@ def main(model_cfg):
         local_rank = 0
 
     # ---------- 实例化卷积神经网络模型 ----------
-    model = DeepLab(
-        num_classes,
-        backbone,
-        pretrained,
-        downsample_factor,
-    )
+    model = DeepLab(num_classes, backbone, pretrained, downsample_factor, backbone_path)
     # 若不载入预训练权重参数 初始化模型的权重参数
     if not pretrained:
         weights_init(model)

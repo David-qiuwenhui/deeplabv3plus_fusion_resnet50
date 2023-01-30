@@ -303,12 +303,12 @@ def resnet101(**kwargs):
     return _resnet(block=Bottleneck, layers=[3, 4, 23, 3], **kwargs)
 
 
-def resnet50_backbone(pretrained=False):
+def resnet50_backbone(pretrained=False, backbone_path=""):
     backbone = resnet50(
         replace_stride_with_dilation=[False, True, True]
     )  # 下采样率为8倍  layer0/1/2进行下采样，layer3/4进行膨胀卷积
     if pretrained:
-        backbone.load_state_dict(torch.load("./pre_weights/resnet50_imagenet.pth"))
+        backbone.load_state_dict(torch.load(backbone_path))
     # main_inplanes = 2048
     # low_inplanes = 256
 

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from nets.resnet import resnet50_backbone
+from nets.resnext import resnext50_32x4d_backbone
 from nets.xception import xception
 from nets.mobilenetv2 import mobilenetv2
 
@@ -178,7 +179,14 @@ class ASPP(nn.Module):
 
 
 class DeepLab(nn.Module):
-    def __init__(self, num_classes, backbone, pretrained=False, downsample_factor=8):
+    def __init__(
+        self,
+        num_classes,
+        backbone,
+        pretrained=False,
+        downsample_factor=8,
+        backbone_path="",
+    ):
         super(DeepLab, self).__init__()
         if backbone == "xception":
             # ----------------------------------#
@@ -201,10 +209,22 @@ class DeepLab(nn.Module):
         elif backbone == "resnet50":
             # ----------------------------------#
             #   获得两个特征层
-            #   主干部分
-            #   浅层特征
+            #   主干部分    [2048,H/8,W/8]
+            #   浅层特征    [256,H/4,W/4]
             # ----------------------------------#
-            self.backbone = resnet50_backbone(pretrained)
+            self.backbone = resnet50_backbone(pretrained, backbone_path)
+            in_channels = 2048  # 主干部分的特征
+            low_level_channels = 256  # 浅层次特征
+
+        elif backbone == "resnext50":
+            self.backbone = resnext50_32x4d_backbone(
+                pretrained=False, downsample_factor=8
+            )
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [2048,H/8,W/8]
+            #   浅层特征    [256,H/4,W/4]
+            # ----------------------------------#
             in_channels = 2048  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征
 
