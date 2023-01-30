@@ -12,7 +12,7 @@ from nets.deeplabv3_plus import DeepLab
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="xception",
+    backbone="resnet50",
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 )
 
@@ -30,7 +30,7 @@ def main(model_cfg):
         pretrained=False,
         downsample_factor=8,
     ).to(device)
-    summary(model, input_size=(3, input_shape[0], input_shape[1]))
+    # summary(model, input_size=(3, input_shape[0], input_shape[1]))
 
     dummy_input = torch.randn(1, 3, input_shape[0], input_shape[1]).to(device)
     flops, params = profile(model.to(device), (dummy_input,), verbose=False)
