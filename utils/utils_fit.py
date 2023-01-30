@@ -41,7 +41,7 @@ def fit_one_epoch(
         print("---------- Start Train ----------")
         pbar = tqdm(
             total=epoch_step,
-            desc=f"🚀 Epoch {epoch + 1}/{Epoch}",
+            desc=f"🚀Epoch {epoch + 1}/{Epoch}",
             postfix=dict,
             mininterval=0.1,
         )

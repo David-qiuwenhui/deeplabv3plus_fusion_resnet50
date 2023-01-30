@@ -189,7 +189,7 @@ class DeepLab(nn.Module):
         backbone_path="",
     ):
         super(DeepLab, self).__init__()
-        self.backbone = backbone
+        self.backbone_name = backbone
         if backbone == "xception":
             # ----------------------------------#
             #   获得两个特征层
@@ -258,7 +258,11 @@ class DeepLab(nn.Module):
         #   浅层特征边的卷积处理模块 将通道维度调整为48
         # ----------------------------------#
         self.shortcut_conv = nn.Sequential(
-            nn.Conv2d(in_channels=low_level_channels, out_channels=256, kernel_size=1),
+            nn.Conv2d(
+                in_channels=low_level_channels,
+                out_channels=256,  # deeplabv3plus 48
+                kernel_size=1,
+            ),
             nn.BatchNorm2d(num_features=256),
             nn.ReLU(inplace=True),
         )
@@ -295,9 +299,9 @@ class DeepLab(nn.Module):
         #   x : 主干部分-利用ASPP结构进行加强特征提取 (B, 2048, H/8, W/8)  处理8倍下采样feature maps
         # -----------------------------------------#
 
-        if self.backbone in ["xception", "mobilenet", "repvgg"]:
+        if self.backbone_name in ["xception", "mobilenet", "repvgg"]:
             low_level_features, x = self.backbone(x)
-        elif self.backbone in ["resnet50", "resnext50"]:
+        elif self.backbone_name in ["resnet50", "resnext50"]:
             features = self.backbone(x)
             low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
             x = features["main"]  # (B, 2048, H/8, W/8)

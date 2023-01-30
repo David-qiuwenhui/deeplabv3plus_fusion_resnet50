@@ -35,15 +35,15 @@ model_cfg = dict(
     sync_bn=False,  # 是否使用sync_bn，DDP模式多卡可用
     # ---------- 训练Epoch和Batch size超参数 ----------
     freeze_train=False,
-    freeze_batch_size=16,
-    unfreeze_batch_size=16,
+    freeze_batch_size=2,
+    unfreeze_batch_size=2,
     model_path="",
     init_epoch=0,
     freeze_epochs=0,
     unfreeze_epochs=20,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",
-    init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
+    # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
     momentum=0.9,
     weight_decay=1e-4,  # weight decay (default: 1e-4)
     lr_decay_type="cos",  # "cos", "step"
@@ -88,7 +88,8 @@ def main(model_cfg):
     #                   当使用SGD优化器时建议设置   Init_lr=7e-3
     #   Min_lr          模型的最小学习率，默认为最大学习率的0.01
     # ------------------------------------------------------------------
-    Init_lr = model_cfg["init_lr"]
+    Init_lr = 0.1 * Unfreeze_batch_size / 256
+    # Init_lr = model_cfg["init_lr"]
     Min_lr = Init_lr * 0.01
     # ------------------------------------------------------------------#
     #   optimizer_type  使用到的优化器种类，可选的有adam、sgd
