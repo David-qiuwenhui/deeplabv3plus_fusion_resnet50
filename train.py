@@ -104,7 +104,9 @@ def main(model_cfg):
     weight_decay = model_cfg["weight_decay"]
     lr_decay_type = model_cfg["lr_decay_type"]  # 使用到的学习率下降方式，可选的有'step'、'cos'
     save_period = model_cfg["save_freq"]  # 多少个epoch保存一次权值
-    save_dir = model_cfg["save_dir"]  # 权值与日志文件保存的文件夹
+    save_dir = os.path.join(
+        model_cfg["save_dir"], model_cfg["backbone"]
+    )  # 权值与日志文件保存的文件夹
 
     eval_flag = model_cfg["eval_flag"]  # 是否在训练时进行评估，评估对象为验证集
     eval_period = model_cfg["eval_period"]  # 代表多少个epoch评估一次
