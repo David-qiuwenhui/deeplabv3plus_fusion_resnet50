@@ -5,6 +5,7 @@ from nets.hrnet import HRNet_Backbone, hrnet_classification
 from nets.repvgg import repvgg_backbone
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
+from nets.swin_transformer import Swin_Transformer_Backbone
 from nets.xception import xception
 from nets.mobilenetv2 import mobilenetv2
 
@@ -246,14 +247,24 @@ class DeepLab(nn.Module):
         elif backbone == "hrnet":
             # ----------------------------------#
             #   获得两个特征层
-            #   主干部分
-            #   浅层特征
+            #   主干部分    [480,H/8,W/8]
+            #   浅层特征    [256,H/4,W/4]
             # ----------------------------------#
             self.backbone = HRNet_Backbone(
                 backbone="hrnetv2_w32", pretrained=pretrained
             )
             in_channels = 480  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征
+
+        elif backbone == "swin_transformer":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [1024,H/8,W/8]
+            #   浅层特征    [256,H/4,W/4]
+            # ----------------------------------#
+            self.backbone = Swin_Transformer_Backbone()
+            in_channels = 1024
+            low_level_channels = 256
         else:
             raise ValueError(
                 "Unsupported backbone - `{}`, Use mobilenet, xception.".format(backbone)
@@ -312,7 +323,13 @@ class DeepLab(nn.Module):
         #   x : 主干部分-利用ASPP结构进行加强特征提取 (B, 2048, H/8, W/8)  处理8倍下采样feature maps
         # -----------------------------------------#
 
-        if self.backbone_name in ["xception", "mobilenet", "repvgg", "hrnet"]:
+        if self.backbone_name in [
+            "xception",
+            "mobilenet",
+            "repvgg",
+            "hrnet",
+            "swin_transformer",
+        ]:
             low_level_features, x = self.backbone(x)
         elif self.backbone_name in ["resnet50", "resnext50"]:
             features = self.backbone(x)
