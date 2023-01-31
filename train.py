@@ -15,6 +15,9 @@ from utils.dataloader import DeeplabDataset, deeplab_dataset_collate
 from utils.utils import show_config, time_synchronized
 from utils.utils_fit import fit_one_epoch
 
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+
 # 模型的超参数
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",

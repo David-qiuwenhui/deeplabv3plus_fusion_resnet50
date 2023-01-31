@@ -250,7 +250,7 @@ class DeepLab(nn.Module):
             #   浅层特征
             # ----------------------------------#
             self.backbone = HRNet_Backbone(
-                num_classes=num_classes, backbone="hrnetv2_w32", pretrained=pretrained
+                backbone="hrnetv2_w32", pretrained=pretrained
             )
             in_channels = 480  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征

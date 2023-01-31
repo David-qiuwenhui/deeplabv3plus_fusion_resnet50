@@ -651,12 +651,12 @@ class hrnet_backbone_classification(nn.Module):
             else:
                 x_list.append(y_list[i])
         y_list = self.model.stage4(x_list)
-        # ylist[0] (bs, 32, 120, 120), ylist[1] (bs, 64, 60, 60), ylist[2] (bs, 128, 30, 30)  ylist[3] (bs, 256, 15, 15)
+        # ylist[0] (bs, 32, H/4, W/4), ylist[1] (bs, 64, H/8, W/8), ylist[2] (bs, 128, H/16, W/16)  ylist[3] (bs, 256, H/32, W/32)
         return y_list, low_level_features
 
 
 class HRNet_Backbone(nn.Module):
-    def __init__(self, num_classes=21, backbone="hrnetv2_w32", pretrained=False):
+    def __init__(self, backbone, pretrained=False):
         super().__init__()
         self.backbone = hrnet_backbone_classification(
             backbone=backbone, pretrained=pretrained
@@ -666,6 +666,7 @@ class HRNet_Backbone(nn.Module):
             self.backbone.model.pre_stage_channels, dtype=int
         )  # pre_stage_channels = [32, 64, 128, 256]  channels_sum=480
 
+        # new last layer
         self.last_layer = nn.Sequential(
             nn.Conv2d(
                 in_channels=last_inp_channels,
@@ -678,11 +679,13 @@ class HRNet_Backbone(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(
                 in_channels=last_inp_channels,
-                out_channels=num_classes,
-                kernel_size=1,
+                out_channels=last_inp_channels,
+                kernel_size=3,
                 stride=1,
-                padding=0,
+                padding=1,
             ),
+            nn.BatchNorm2d(num_features=last_inp_channels, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, inputs):
@@ -705,11 +708,7 @@ class HRNet_Backbone(nn.Module):
         )  # x3(B, 256, H/4, W/4)
         # Concat feature maps
         x = torch.cat(tensors=[x[0], x1, x2, x3], dim=1)  # x(B, 480, H/4, W/4)
-        # Convolution block90
-        x = self.last_layer(x)  # x(B, N, H/4, W/4)
-        # Upsampling
-        x = F.interpolate(
-            input=x, size=(H, W), mode="bilinear", align_corners=True
-        )  # x(B, N, H, W)
+        # Fusion Convolution (main branch)
+        x = self.last_layer(x)  # x(B, last_inp_channels, H/4, W/4)
 
         return low_level_features, x
