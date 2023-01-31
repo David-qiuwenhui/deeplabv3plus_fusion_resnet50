@@ -19,9 +19,9 @@ from utils.utils_fit import fit_one_epoch
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
     # ---------- 数据集超参数 -----------
-    data_path="../../dataset/SUIMdevkit",  # dataset root
+    data_path="../../dataset/SUIMdevkit_mini",  # dataset root
     # ---------- 卷积模型超参数 ----------
-    backbone="repvgg",  #  所使用的的主干网络 "mobilenet", "xception"
+    backbone="hrnet",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
     downsample_factor=8,
@@ -40,7 +40,7 @@ model_cfg = dict(
     model_path="",
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=500,
+    unfreeze_epochs=20,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",
     # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
@@ -139,6 +139,7 @@ def main(model_cfg):
 
     # ---------- 实例化卷积神经网络模型 ----------
     model = DeepLab(num_classes, backbone, pretrained, downsample_factor, backbone_path)
+    # ----------------------------------------
     # 若不载入预训练权重参数 初始化模型的权重参数
     if not pretrained:
         weights_init(model)
