@@ -573,7 +573,7 @@ class RepVGG(BaseModule):
         self.deploy = True
 
 
-def repvgg_backbone(model_type=None, ):
+def repvgg_backbone(model_type=None):
     model_cfg = repvgg_cfg[model_type]
     backbone = RepVGG(**model_cfg)
     return backbone

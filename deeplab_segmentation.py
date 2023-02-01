@@ -29,47 +29,6 @@ from utils.utils import (
 
 
 class DeeplabV3_Segmentation(object):
-    _defaults = {
-        # -------------------------------------------------------------------#
-        #   model_path指向logs文件夹下的权值文件
-        #   训练好后logs文件夹下存在多个权值文件，选择验证集损失较低的即可。
-        #   验证集损失较低不代表miou较高，仅代表该权值在验证集上泛化性能较好。
-        # -------------------------------------------------------------------#
-        "model_path": "./logs/04_deeplabv3plus_500epoch_8bs_xception_lr1e-2/best_epoch_weights.pth",
-        # ----------------------------------------#
-        #   所需要区分的类的个数+1
-        # ----------------------------------------#
-        "num_classes": 7,
-        # ----------------------------------------#
-        #   所使用的的主干网络：
-        #   mobilenet
-        #   xception
-        # ----------------------------------------#
-        "backbone": "xception",
-        # ----------------------------------------#
-        #   输入图片的大小
-        # ----------------------------------------#
-        "input_shape": [512, 512],
-        # ----------------------------------------#
-        #   下采样的倍数，一般可选的为8和16
-        #   与训练时设置的一样即可
-        # ----------------------------------------#
-        "downsample_factor": 8,
-        # -------------------------------------------------#
-        #   mix_type参数用于控制检测结果的可视化方式
-        #
-        #   mix_type = 0的时候代表原图与生成的图进行混合
-        #   mix_type = 1的时候代表仅保留生成的图
-        #   mix_type = 2的时候代表仅扣去背景，仅保留原图中的目标
-        # -------------------------------------------------#
-        "mix_type": 0,
-        # -------------------------------#
-        #   是否使用Cuda
-        #   没有GPU可以设置成False
-        # -------------------------------#
-        "cuda": True,
-    }
-
     # ---------------------------------------------------#
     #   初始化Deeplab
     # ---------------------------------------------------#
@@ -83,6 +42,7 @@ class DeeplabV3_Segmentation(object):
         aux,
         mix_type,
         cuda,
+        deploy,
         **kwargs,
     ):
         self._defaults = {}
@@ -94,6 +54,7 @@ class DeeplabV3_Segmentation(object):
         self._defaults["aux"] = aux
         self._defaults["mix_type"] = mix_type
         self._defaults["cuda"] = cuda
+        self._defaults["deploy"] = deploy
         self.__dict__.update(self._defaults)
 
         for name, value in kwargs.items():
@@ -151,10 +112,14 @@ class DeeplabV3_Segmentation(object):
             self.backbone,
             pretrained=False,
             downsample_factor=self.downsample_factor,
+            deploy=self.deploy,
         )
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.net.load_state_dict(torch.load(self.model_path, map_location=device))
+        # 注意有些模型训练和部署会发生参数和结构的变化 这里加载模型权重时采用strict=False
+        self.net.load_state_dict(
+            torch.load(self.model_path, map_location=device), strict=False
+        )
         self.net = self.net.eval()
         print("{} model, and classes loaded.".format(self.model_path))
         if self.cuda:

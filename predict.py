@@ -14,13 +14,14 @@ from utils.utils import time_synchronized
 pred_cfg = dict(
     # ---------- 预测模式的参数 ----------
     # predict, dir_predict, fps, video
-    mode="dir_predict",  # predict, dir_predict, fps, video
+    mode="fps",  # predict, dir_predict, fps, video
     mix_type=0,  # 0混合, 1仅原图, 2仅原图中的目标_扣去背景
     # ---------- 深度卷积神经网络模型的超参数 ----------
-    model_path="./logs/02_DeepLabV3Plus_Fusion2_ResNeXt50_500epochs_bs16_lr1e-2/last_epoch_weights.pth",
-    backbone="resnext50",
+    model_path="./logs/repvgg/03_DeepLabV3Plus_Fusion2_RepVGG_B2g4_500epochs_bs16_lr1e-2/best_epoch_weights.pth",
+    backbone="repvgg",
     input_shape=[512, 512],
     downsample_factor=8,
+    deploy=False,
     num_classes=7,
     name_classes=[
         "Background_waterbody",
@@ -61,6 +62,7 @@ def main(pred_cfg):
         pred_cfg["aux_branch"],
         pred_cfg["mix_type"],
         pred_cfg["cuda"],
+        pred_cfg["deploy"],
     )
 
     # ----------------------------------------------------------------------------------------------------------#

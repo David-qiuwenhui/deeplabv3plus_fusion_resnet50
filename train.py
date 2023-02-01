@@ -384,7 +384,7 @@ def main(model_cfg):
         batch_size=batch_size,
         num_workers=num_workers,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,
         collate_fn=deeplab_dataset_collate,
         sampler=val_sampler,
     )
@@ -471,7 +471,7 @@ def main(model_cfg):
                 batch_size=batch_size,
                 num_workers=num_workers,
                 pin_memory=True,
-                drop_last=True,
+                drop_last=False,
                 collate_fn=deeplab_dataset_collate,
                 sampler=val_sampler,
             )

@@ -12,7 +12,9 @@ from nets.deeplabv3_plus import DeepLab
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="resnext50",
+    backbone="repvgg",
+    downsample_factor=8,
+    deploy=True,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 )
 
@@ -22,13 +24,16 @@ def main(model_cfg):
     num_classes = model_cfg["num_classes"]
     backbone = model_cfg["backbone"]
     device = model_cfg["device"]
+    downsample_factor = model_cfg["downsample_factor"]
+    deploy = model_cfg["deploy"]
 
     # ---------- 实例化深度卷积模型 ----------
     model = DeepLab(
         num_classes,
         backbone,
         pretrained=False,
-        downsample_factor=8,
+        downsample_factor=downsample_factor,
+        deploy=deploy,
     ).to(device)
     # summary(model, input_size=(3, input_shape[0], input_shape[1]))
 
