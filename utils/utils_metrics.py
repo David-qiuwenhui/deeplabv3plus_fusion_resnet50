@@ -185,7 +185,7 @@ def draw_plot_func(
     for i, val in enumerate(values):
         str_val = " " + str(val)
         if val < 1.0:
-            str_val = " {0:.4f}".format(val)
+            str_val = " {0:.2f}%".format(val * 100)
         t = plt.text(val, i, str_val, color="royalblue", va="center", fontweight="bold")
         if i == (len(values) - 1):
             adjust_axes(r, t, fig, axes)

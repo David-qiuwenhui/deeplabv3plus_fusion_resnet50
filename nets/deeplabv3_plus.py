@@ -189,7 +189,6 @@ class DeepLab(nn.Module):
         pretrained=False,
         downsample_factor=8,
         backbone_path="",
-        deploy=False,
     ):
         super(DeepLab, self).__init__()
         self.backbone_name = backbone
@@ -241,8 +240,6 @@ class DeepLab(nn.Module):
             #   浅层特征    [320,H/4,W/4]
             # ----------------------------------#
             self.backbone = repvgg_backbone(model_type="repvgg_B2g4_new")
-            if deploy:
-                self.backbone.switch_to_deploy()
 
             in_channels = 2560  # 主干部分的特征
             low_level_channels = 320  # 浅层次特征
@@ -362,3 +359,7 @@ class DeepLab(nn.Module):
             input=x, size=(H, W), mode="bilinear", align_corners=True
         )  # x(bs, num_classes, H, W)
         return x
+
+    def switch_to_deploy(self):
+        self.backbone.switch_to_deploy()
+        print(f"\033[1;33;44m 🔬🔬🔬🔬 Switch to deploy model \033[0m")

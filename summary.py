@@ -12,9 +12,9 @@ from nets.deeplabv3_plus import DeepLab
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="repvgg",
+    backbone="swin_transformer",
     downsample_factor=8,
-    deploy=True,
+    deploy=False,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 )
 
@@ -33,7 +33,6 @@ def main(model_cfg):
         backbone,
         pretrained=False,
         downsample_factor=downsample_factor,
-        deploy=deploy,
     ).to(device)
     # summary(model, input_size=(3, input_shape[0], input_shape[1]))
 

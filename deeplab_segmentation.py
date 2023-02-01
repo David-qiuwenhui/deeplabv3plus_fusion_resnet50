@@ -112,14 +112,13 @@ class DeeplabV3_Segmentation(object):
             self.backbone,
             pretrained=False,
             downsample_factor=self.downsample_factor,
-            deploy=self.deploy,
         )
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # 注意有些模型训练和部署会发生参数和结构的变化 这里加载模型权重时采用strict=False
-        self.net.load_state_dict(
-            torch.load(self.model_path, map_location=device), strict=False
-        )
+        self.net.load_state_dict(torch.load(self.model_path, map_location=device))
+        # repvgg切换到部署模式需要先载入模型的训练权重参数 再切换成部署模式
+        if self.deploy:
+            self.net.switch_to_deploy()
         self.net = self.net.eval()
         print("{} model, and classes loaded.".format(self.model_path))
         if self.cuda:
@@ -257,6 +256,8 @@ class DeeplabV3_Segmentation(object):
         return image
 
     def get_FPS(self, image, test_interval):
+        from tqdm import tqdm
+
         # ---------------------------------------------------------#
         #   在这里将图像转换成RGB图像，防止灰度图在预测时报错。
         #   代码仅仅支持RGB图像的预测，所有其它类型的图像都会转化成RGB
@@ -303,7 +304,7 @@ class DeeplabV3_Segmentation(object):
             ]
 
         t1 = time_synchronized()
-        for _ in range(test_interval):
+        for _ in tqdm(range(test_interval)):
             with torch.no_grad():
                 # ---------------------------------------------------#
                 #   图片传入网络进行预测
