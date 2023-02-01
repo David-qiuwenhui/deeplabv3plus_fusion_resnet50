@@ -24,7 +24,7 @@ model_cfg = dict(
     # ---------- 数据集超参数 -----------
     data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
-    backbone="swin_transformer",  #  所使用的的主干网络 "mobilenet", "xception"
+    backbone="mobilevit",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
     downsample_factor=8,
@@ -38,8 +38,8 @@ model_cfg = dict(
     sync_bn=False,  # 是否使用sync_bn，DDP模式多卡可用
     # ---------- 训练Epoch和Batch size超参数 ----------
     freeze_train=False,
-    freeze_batch_size=8,
-    unfreeze_batch_size=8,
+    freeze_batch_size=16,
+    unfreeze_batch_size=16,
     model_path="",
     init_epoch=0,
     freeze_epochs=0,

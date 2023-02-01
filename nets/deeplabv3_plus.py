@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from nets.hrnet import HRNet_Backbone, hrnet_classification
+from nets.mobilevit import mobile_vit_small_backbone
 from nets.repvgg import repvgg_backbone
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
@@ -265,6 +266,16 @@ class DeepLab(nn.Module):
             self.backbone = Swin_Transformer_Backbone()
             in_channels = 1024
             low_level_channels = 256
+
+        elif backbone == "mobilevit":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [640,H/8,W/8]
+            #   浅层特征    [64,H/4,W/4]
+            # ----------------------------------#
+            self.backbone = mobile_vit_small_backbone(model_type="small")
+            in_channels = 640
+            low_level_channels = 64
         else:
             raise ValueError(
                 "Unsupported backbone - `{}`, Use mobilenet, xception.".format(backbone)
@@ -329,6 +340,7 @@ class DeepLab(nn.Module):
             "repvgg",
             "hrnet",
             "swin_transformer",
+            "mobilevit",
         ]:
             low_level_features, x = self.backbone(x)
         elif self.backbone_name in ["resnet50", "resnext50"]:

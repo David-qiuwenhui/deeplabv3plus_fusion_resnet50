@@ -374,8 +374,6 @@ def resnext50_32x4d_backbone(pretrained=False, downsample_factor=8, backbone_pat
 
     if pretrained:
         backbone.load_state_dict(torch.load(backbone_path))
-    # main_channels = 
-    # low_channels = 
     
     return_layers = {
         "layer1": "low_features", 
