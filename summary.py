@@ -12,7 +12,7 @@ from nets.deeplabv3_plus import DeepLab
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="swin_transformer",
+    backbone="mobilevit",
     downsample_factor=8,
     deploy=False,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
