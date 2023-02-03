@@ -17,7 +17,7 @@ pred_cfg = dict(
     mode="fps",  # predict, dir_predict, fps, video
     mix_type=0,  # 0混合, 1仅原图, 2仅原图中的目标_扣去背景
     # ---------- 深度卷积神经网络模型的超参数 ----------
-    model_path="./logs/mobilenetv3/best_epoch_weights.pth",
+    model_path="./logs/mobilenetv3/07_DeepLabV3Plus_Fusion2_mobilenetv3_large_500epochs_bs16_lr6.25e-3/best_epoch_weights.pth",
     backbone="mobilenetv3",
     input_shape=[512, 512],
     downsample_factor=8,

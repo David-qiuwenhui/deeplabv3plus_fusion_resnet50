@@ -22,7 +22,7 @@ from utils.utils_fit import fit_one_epoch
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
     # ---------- 数据集超参数 -----------
-    data_path="../../dataset/SUIMdevkit_mini",  # dataset root
+    data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
     backbone="mobilenetv3",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
@@ -43,9 +43,9 @@ model_cfg = dict(
     model_path="",
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=5,
+    unfreeze_epochs=200,
     # ---------- 训练的优化器超参数 ----------
-    optimizer="sgd",
+    optimizer="sgd",  # "sgd", "adam"
     # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
     momentum=0.9,
     weight_decay=1e-4,  # weight decay (default: 1e-4)
@@ -90,22 +90,28 @@ def main(model_cfg):
     #                   当使用Adam优化器时建议设置  Init_lr=5e-4
     #                   当使用SGD优化器时建议设置   Init_lr=7e-3
     #   Min_lr          模型的最小学习率，默认为最大学习率的0.01
-    # ------------------------------------------------------------------
-    Init_lr = 0.1 * Unfreeze_batch_size / 256
-    # Init_lr = model_cfg["init_lr"]
-    Min_lr = Init_lr * 0.01
-    # ------------------------------------------------------------------#
+
     #   optimizer_type  使用到的优化器种类，可选的有adam、sgd
     #                   当使用Adam优化器时建议设置  Init_lr=5e-4
     #                   当使用SGD优化器时建议设置   Init_lr=7e-3
     #   momentum        优化器内部使用到的momentum参数
     #   weight_decay    权值衰减，可防止过拟合
     #                   adam会导致weight_decay错误，使用adam时建议设置为0。
-    # ------------------------------------------------------------------#
+    # ------------------------------------------------------------------
     optimizer_type = model_cfg["optimizer"]
     momentum = model_cfg["momentum"]
     weight_decay = model_cfg["weight_decay"]
     lr_decay_type = model_cfg["lr_decay_type"]  # 使用到的学习率下降方式，可选的有'step'、'cos'
+    # Init_lr = model_cfg["init_lr"]
+
+    # 根据训练优化器的类型设定初始学习率
+    if optimizer_type == "sgd":
+        Init_lr = 0.1 * Unfreeze_batch_size / 256
+    elif optimizer_type == "adam":
+        Init_lr = 5e-4
+        # Init_lr = 5e-4 * Unfreeze_batch_size / 64
+    Min_lr = Init_lr * 0.01
+
     save_period = model_cfg["save_freq"]  # 多少个epoch保存一次权值
     save_dir = os.path.join(
         model_cfg["save_dir"], model_cfg["backbone"]
@@ -293,9 +299,9 @@ def main(model_cfg):
     nbs = 16
     lr_limit_max = 5e-4 if optimizer_type == "adam" else 1e-1
     lr_limit_min = 3e-4 if optimizer_type == "adam" else 5e-4
-    if backbone == "xception":
-        lr_limit_max = 1e-4 if optimizer_type == "adam" else 1e-1
-        lr_limit_min = 1e-4 if optimizer_type == "adam" else 5e-4
+    # if backbone == "xception":
+    #     lr_limit_max = 1e-4 if optimizer_type == "adam" else 1e-1
+    #     lr_limit_min = 1e-4 if optimizer_type == "adam" else 5e-4
     Init_lr_fit = min(
         max(batch_size / nbs * Init_lr, lr_limit_min), lr_limit_max
     )  # Init_lr_fit = 7e-3
@@ -423,9 +429,9 @@ def main(model_cfg):
             nbs = 16
             lr_limit_max = 5e-4 if optimizer_type == "adam" else 1e-1
             lr_limit_min = 3e-4 if optimizer_type == "adam" else 5e-4
-            if backbone == "xception":
-                lr_limit_max = 1e-4 if optimizer_type == "adam" else 1e-1
-                lr_limit_min = 1e-4 if optimizer_type == "adam" else 5e-4
+            # if backbone == "xception":
+            #     lr_limit_max = 1e-4 if optimizer_type == "adam" else 1e-1
+            #     lr_limit_min = 1e-4 if optimizer_type == "adam" else 5e-4
             Init_lr_fit = min(
                 max(batch_size / nbs * Init_lr, lr_limit_min), lr_limit_max
             )

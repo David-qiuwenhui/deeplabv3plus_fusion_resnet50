@@ -18,8 +18,8 @@ val_cfg = dict(
     miou_mode=0,  # 0, 1, 2
     mix_type=1,  # 0混合, 1仅原图, 2仅原图中的目标_扣去背景 get_miou不起作用
     # ---------- 卷积模型的参数 ----------
-    model_path="./logs/mobilevit/06_DeepLabV3Plus_Fusion2_mobilevit_small_500epochs_bs16_lr6.25e-3/best_epoch_weights.pth",
-    backbone="mobilevit",
+    model_path="./logs/mobilenetv3/07_DeepLabV3Plus_Fusion2_mobilenetv3_large_500epochs_bs16_lr6.25e-3/best_epoch_weights.pth",
+    backbone="mobilenetv3",
     aux_branch=False,
     num_classes=7,
     name_classes=[
