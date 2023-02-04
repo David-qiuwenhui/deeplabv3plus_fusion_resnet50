@@ -14,6 +14,7 @@ BN_MOMENTUM = 0.1
 
 
 def conv3x3(in_planes, out_planes, stride=1):
+    # 3*3 Convolution
     return nn.Conv2d(
         in_channels=in_planes,
         out_channels=out_planes,
@@ -29,9 +30,12 @@ class BasicBlock(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
+        # 3*3 Conv
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(num_features=planes, momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
+
+        # 3*3 Conv
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = nn.BatchNorm2d(num_features=planes, momentum=BN_MOMENTUM)
         self.downsample = downsample
@@ -39,7 +43,6 @@ class BasicBlock(nn.Module):
 
     def forward(self, x):
         residual = x
-
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
@@ -62,10 +65,13 @@ class Bottleneck(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
+        # 1*1 Conv
         self.conv1 = nn.Conv2d(
             in_channels=inplanes, out_channels=planes, kernel_size=1, bias=False
         )  # channels: inplanes -> planes
         self.bn1 = nn.BatchNorm2d(num_features=planes, momentum=BN_MOMENTUM)
+
+        # 3*3 Conv
         self.conv2 = nn.Conv2d(
             in_channels=planes,
             out_channels=planes,
@@ -75,6 +81,8 @@ class Bottleneck(nn.Module):
             bias=False,
         )
         self.bn2 = nn.BatchNorm2d(num_features=planes, momentum=BN_MOMENTUM)
+
+        # 1*1 Conv
         self.conv3 = nn.Conv2d(
             in_channels=planes,
             out_channels=planes * self.expansion,  # channels: planes -> planes * 4
@@ -295,7 +303,9 @@ class HighResolutionNet_Classification(nn.Module):
             "hrnetv2_w32": [32, 64, 128, 256],
             "hrnetv2_w48": [48, 96, 192, 384],
         }[backbone]
-        # stem net
+
+        # Main Downsample Block
+        # 3*3 Conv
         self.conv1 = nn.Conv2d(
             in_channels=3,
             out_channels=64,
@@ -305,6 +315,7 @@ class HighResolutionNet_Classification(nn.Module):
             bias=False,
         )
         self.bn1 = nn.BatchNorm2d(num_features=64, momentum=BN_MOMENTUM)
+        # 3*3 Conv
         self.conv2 = nn.Conv2d(
             in_channels=64,
             out_channels=64,
@@ -316,6 +327,7 @@ class HighResolutionNet_Classification(nn.Module):
         self.bn2 = nn.BatchNorm2d(num_features=64, momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
 
+        # Stage1(bottleneck block * 4)
         self.layer1 = self._make_layer(
             block=Bottleneck, inplanes=64, planes=64, num_blocks=4
         )  # bottleneck x 4

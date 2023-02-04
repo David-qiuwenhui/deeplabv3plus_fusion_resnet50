@@ -17,7 +17,6 @@ from utils.utils_fit import fit_one_epoch
 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-
 # 模型的超参数
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
@@ -43,7 +42,7 @@ model_cfg = dict(
     model_path="",
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=200,
+    unfreeze_epochs=500,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",  # "sgd", "adam"
     # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
@@ -106,10 +105,11 @@ def main(model_cfg):
 
     # 根据训练优化器的类型设定初始学习率
     if optimizer_type == "sgd":
+        # Init_lr = 7e-3  # 0.007
         Init_lr = 0.1 * Unfreeze_batch_size / 256
     elif optimizer_type == "adam":
-        Init_lr = 5e-4
-        # Init_lr = 5e-4 * Unfreeze_batch_size / 64
+        # Init_lr = 5e-4  # 0.0005
+        Init_lr = 5e-4 * Unfreeze_batch_size / 64  # B=16, Init_lr=0.000125
     Min_lr = Init_lr * 0.01
 
     save_period = model_cfg["save_freq"]  # 多少个epoch保存一次权值
