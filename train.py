@@ -21,7 +21,7 @@ from utils.utils_fit import fit_one_epoch
 model_cfg = dict(
     description="pytorch deeplabv3plus fusion training",
     # ---------- 数据集超参数 -----------
-    data_path="../../dataset/SUIMdevkit_mini",  # dataset root
+    data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
     # xception, mobilenet, resnet50, resnext50, repvgg, repvgg_new
     # hrnet, swin_transformer, mobilevit, mobilenetv3
@@ -44,7 +44,7 @@ model_cfg = dict(
     model_path="",
     init_epoch=0,
     freeze_epochs=0,
-    unfreeze_epochs=10,
+    unfreeze_epochs=500,
     # ---------- 训练的优化器超参数 ----------
     optimizer="sgd",  # "sgd", "adam"
     # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
