@@ -65,10 +65,10 @@ class SqueezeExcitation(nn.Module):
         super(SqueezeExcitation, self).__init__()
         squeeze_c = _make_divisible(ch=input_c // squeeze_factor, divisor=8)
         self.fc1 = nn.Conv2d(
-            input_c, squeeze_c, 1
+            input_c, squeeze_c, kernel_size=1
         )  # fc1: expand_channel // 4 (Conv2d 1x1代替全连接层)
         self.fc2 = nn.Conv2d(
-            squeeze_c, input_c, 1
+            squeeze_c, input_c, kernel_size=1
         )  # fc2: expand_channel (Conv2d 1x1代替全连接层)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -116,15 +116,15 @@ class InvertedResidual(nn.Module):
         if cnf.stride not in [1, 2]:
             raise ValueError("illegal stride value.")
 
-        self.use_res_connect = (
-            cnf.stride == 1 and cnf.input_c == cnf.out_c
-        )  # 检测是否使用shortcu捷径分支（stride=1不进行下采样 and input_c==output_c）
+        # 检测是否使用shortcu捷径分支（stride=1不进行下采样 and input_c==output_c）
+        self.use_res_connect = cnf.stride == 1 and cnf.input_c == cnf.out_c
 
         layers: List[nn.Module] = []
         activation_layer = nn.Hardswish if cnf.use_hs else nn.ReLU
 
-        # expand
-        if cnf.expanded_c != cnf.input_c:  # 使用conv2d 1x1卷积模块进行升维操作
+        # 使用conv2d 1*1卷积模块进行升维操作
+        # Expand block
+        if cnf.expanded_c != cnf.input_c:
             layers.append(
                 ConvBNActivation(
                     cnf.input_c,
@@ -135,7 +135,7 @@ class InvertedResidual(nn.Module):
                 )
             )
 
-        # depthwise  逐通道卷积Depthwise Conv
+        # Depthwise block 逐通道卷积Depthwise Conv
         layers.append(
             ConvBNActivation(
                 cnf.expanded_c,
@@ -148,12 +148,13 @@ class InvertedResidual(nn.Module):
             )
         )
 
+        # SqueezeExcitation attention block
         if cnf.use_se:  # 使用SE通道注意力机制
             layers.append(
                 SqueezeExcitation(cnf.expanded_c)
             )  # SqueezeExcitation(AdaptiveAvgPool->fc1->ReLU->fc2->hardsigmoid  input*SE_result
 
-        # project 逐点卷积Pointwise Conv
+        # Project block 逐点卷积Pointwise Conv
         layers.append(
             ConvBNActivation(
                 cnf.expanded_c,
@@ -180,12 +181,10 @@ class MobileNetV3(nn.Module):
     def __init__(
         self,
         inverted_residual_setting: List[InvertedResidualConfig],
-        last_channel: int,
-        num_classes: int = 1000,
         block: Optional[Callable[..., nn.Module]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ):
-        super(MobileNetV3, self).__init__()
+        super().__init__()
 
         if not inverted_residual_setting:
             raise ValueError("The inverted_residual_setting should not be empty.")
@@ -205,14 +204,13 @@ class MobileNetV3(nn.Module):
         if block is None:
             block = InvertedResidual
 
-        if norm_layer is None:  # norm_layer使用BatchNormalization
-            norm_layer = partial(
-                nn.BatchNorm2d, eps=0.001, momentum=0.01
-            )  # eps – a value added to the denominator for numerical stability. Default: 1e-5
+        if norm_layer is None:  # norm_layer使用 BatchNormalization
+            norm_layer = partial(nn.BatchNorm2d, eps=0.001, momentum=0.01)
+            # eps – a value added to the denominator for numerical stability. Default: 1e-5
             # momentum - the value used for the running_mean and running_var computation. Default: 0.1
         layers: List[nn.Module] = []
 
-        # 第一个Conv Block升高维度并进行两倍下采样  Conv3x3
+        # 第一个Conv Block升高维度并进行两倍下采样
         # building first layer(conv2d k3, s2) output_c=16
         firstconv_output_c = inverted_residual_setting[0].input_c  # 16
         layers.append(
@@ -231,27 +229,6 @@ class MobileNetV3(nn.Module):
             layers.append(block(cnf, norm_layer))
 
         self.features = nn.Sequential(*layers)  # mobilenetV3的特征提取模块feature extractor
-
-        # building last several layers(已删除)
-        # lastconv_input_c = inverted_residual_setting[-1].out_c  # 160
-        # lastconv_output_c = 6 * lastconv_input_c  # 6 * 160 =960
-        # layers.append(
-        #     ConvBNActivation(
-        #         lastconv_input_c,
-        #         lastconv_output_c,
-        #         kernel_size=1,
-        #         norm_layer=norm_layer,
-        #         activation_layer=nn.Hardswish,
-        #     )
-        # )
-        # self.features = nn.Sequential(*layers)  # mobilenetV3的特征提取模块feature extractor
-        # self.avgpool = nn.AdaptiveAvgPool2d(1)  # 自适应全局平均池化层
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(lastconv_output_c, last_channel),  # mobilenetV3的classifier
-        #     nn.Hardswish(inplace=True),  # last_channel=1280
-        #     nn.Dropout(p=0.2, inplace=True),
-        #     nn.Linear(last_channel, num_classes),
-        # )
 
         # initial weights
         for m in self.modules():
@@ -280,30 +257,18 @@ class MobileNetV3(nn.Module):
         return self._forward_impl(x)
 
 
-def mobilenet_v3_large_deeplabv3plus(
-    num_classes: int = 1000, reduced_tail: bool = False
-) -> MobileNetV3:
+def mobilenet_v3_large_deeplabv3plus(reduced_tail: bool = False) -> MobileNetV3:
     """
     Constructs a large MobileNetV3 architecture from
     "Searching for MobileNetV3" <https://arxiv.org/abs/1905.02244>.
-
-    weights_link:
-    https://download.pytorch.org/models/mobilenet_v3_large-8738ca79.pth
-
     Args:
-        num_classes (int): number of classes
         reduced_tail (bool): If True, reduces the channel counts of all feature layers
             between C4 and C5 by 2. It is used to reduce the channel redundancy in the
             backbone for Detection and Segmentation.
     """
     width_multi = 1.0  # alpha-Width Multiplier（alpha超参数调整卷积核的数量）
-    bneck_conf = partial(
-        InvertedResidualConfig, width_multi=width_multi
-    )  # 预先定义function函数中的参数（已传入的参数不可进行修改，调用时可传入未提前传入的参数）
-    adjust_channels = partial(
-        InvertedResidualConfig.adjust_channels, width_multi=width_multi
-    )
-
+    bneck_conf = partial(InvertedResidualConfig, width_multi=width_multi)
+    # partial 预先定义function函数中的参数（已传入的参数不可进行修改，调用时可传入未提前传入的参数）
     reduce_divider = 2 if reduced_tail else 1  # 缩减最后两个bneck模块的channels参数
 
     # 定义倒残差模块的参数 InvertedResidualConfig(input_c, kernel, expanded_c, out_c, use_se, activation, stride)
@@ -341,13 +306,8 @@ def mobilenet_v3_large_deeplabv3plus(
             1,
         ),
     ]
-    last_channel = adjust_channels(1280 // reduce_divider)  # C5
 
-    return MobileNetV3(
-        inverted_residual_setting=inverted_residual_setting,  # 倒残差模块的超参数
-        last_channel=last_channel,  # classifier前一个层的channels个数
-        num_classes=num_classes,
-    )
+    return MobileNetV3(inverted_residual_setting)  # 倒残差模块的超参数
 
 
 def mobilenet_v3_large_backbone(model_type="large"):

@@ -137,7 +137,7 @@ class HighResolutionModule(nn.Module):
 
         self.branches = self._make_branches(
             num_branches, blocks, num_blocks, num_channels
-        )  # BasicBlock * 4, BasicBlock * 4
+        )
         self.fuse_layers = self._make_fuse_layers()
         self.relu = nn.ReLU(inplace=True)
 
@@ -170,17 +170,17 @@ class HighResolutionModule(nn.Module):
                 stride=stride,
                 downsample=downsample,
             )
-        )
+        )  # Basic Block
         self.num_inchannels[branch_index] = (
             num_channels[branch_index] * block.expansion
-        )  # 更新inchannels的大小
+        )  # 更新inchannels的大小（在basic block的expansion不是1的情况下会进行更新）
         for i in range(1, num_blocks[branch_index]):
             layers.append(
                 block(
                     inplanes=self.num_inchannels[branch_index],
                     planes=num_channels[branch_index],
                 )
-            )  # 重复堆叠block
+            )  # 重复堆叠 Basic Block
 
         return nn.Sequential(*layers)
 
@@ -202,6 +202,7 @@ class HighResolutionModule(nn.Module):
         for i in range(self.num_branches if self.multi_scale_output else 1):
             fuse_layer = []
             for j in range(self.num_branches):
+                # 当前特征图的维度大于目标维度 进行降低维度操作
                 if j > i:
                     fuse_layer.append(
                         nn.Sequential(
@@ -218,11 +219,15 @@ class HighResolutionModule(nn.Module):
                             ),
                         )
                     )
+                # 当前特征图的维度等于目标维度
                 elif j == i:
                     fuse_layer.append(None)
+                # 当前特征图的维度小于目标维度 进行升高维度和渐进式下采样操作
                 else:
                     conv3x3s = []
-                    for k in range(i - j):
+                    for k in range(
+                        i - j
+                    ):  # 下采样至目标特征图大小是渐进式进行的，一次只使用3*3卷积下采样至原来尺寸的1/2，最后一次再进行调整维度并且不使用ReLU激活
                         if k == i - j - 1:
                             conv3x3s.append(
                                 nn.Sequential(
@@ -244,15 +249,16 @@ class HighResolutionModule(nn.Module):
                             conv3x3s.append(
                                 nn.Sequential(
                                     nn.Conv2d(
-                                        self.num_inchannels[j],
-                                        self.num_inchannels[j],
-                                        3,
-                                        2,
-                                        1,
+                                        in_channels=self.num_inchannels[j],
+                                        out_channels=self.num_inchannels[j],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
                                         bias=False,
                                     ),
                                     nn.BatchNorm2d(
-                                        self.num_inchannels[j], momentum=BN_MOMENTUM
+                                        num_features=self.num_inchannels[j],
+                                        momentum=BN_MOMENTUM,
                                     ),
                                     nn.ReLU(inplace=True),
                                 )
@@ -265,12 +271,12 @@ class HighResolutionModule(nn.Module):
     def get_num_inchannels(self):
         return self.num_inchannels
 
-    def forward(self, x):  # x0(bs, 32, 120, 120), x1(bs, 64, 60, 60)
+    def forward(self, x):  # x0(B, 32, H/4, W/4), x1(B, 64, H/8, W/8)
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
 
         for i in range(self.num_branches):
-            x[i] = self.branches[i](x[i])  # x0(bs, 32, 120, 120), x1(bs, 64, 60, 60)
+            x[i] = self.branches[i](x[i])  # x0(B, 32, H/4, W/4), x1(B, 64, H/8, W/8)
 
         x_fuse = []
         for i in range(len(self.fuse_layers)):
@@ -304,7 +310,7 @@ class HighResolutionNet_Classification(nn.Module):
             "hrnetv2_w48": [48, 96, 192, 384],
         }[backbone]
 
-        # Main Downsample Block
+        # ******************** Stage1 ********************
         # 3*3 Conv
         self.conv1 = nn.Conv2d(
             in_channels=3,
@@ -327,10 +333,10 @@ class HighResolutionNet_Classification(nn.Module):
         self.bn2 = nn.BatchNorm2d(num_features=64, momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
 
-        # Stage1(bottleneck block * 4)
+        # ******************** Stage2 (transition1 + (basic_block*4)*1) ********************
         self.layer1 = self._make_layer(
             block=Bottleneck, inplanes=64, planes=64, num_blocks=4
-        )  # bottleneck x 4
+        )  # bottleneck * 4
 
         pre_stage_channels = [Bottleneck.expansion * 64]  # pre_stage_channels = 4 * 64
         num_channels = [num_filters[0], num_filters[1]]  # num_channels = [32, 64]
@@ -342,15 +348,15 @@ class HighResolutionNet_Classification(nn.Module):
             num_branches=2,
             block=BasicBlock,
             num_blocks=[4, 4],
-            num_inchannels=num_channels,
-            num_channels=num_channels,
-        )  # num_channels=[32, 64],
-
+            num_inchannels=num_channels,  # [32, 64]
+            num_channels=num_channels,  # [32, 64]
+        )
+        # ******************** Stage3 (transition2 + (basicblock*4)*4) ********************
         num_channels = [
             num_filters[0],
             num_filters[1],
             num_filters[2],
-        ]  # num_channels=[32, 64, 128]
+        ]  # [32, 64, 128]
         self.transition2 = self._make_transition_layer(
             num_inchannels=pre_stage_channels, num_channels=num_channels
         )  # pre_stage_channels = [32, 64]
@@ -362,7 +368,7 @@ class HighResolutionNet_Classification(nn.Module):
             num_inchannels=num_channels,
             num_channels=num_channels,
         )
-
+        # ******************** Stage4 (transition3 + (basic_block*4)*3) ********************
         num_channels = [
             num_filters[0],
             num_filters[1],
@@ -381,6 +387,7 @@ class HighResolutionNet_Classification(nn.Module):
             num_channels=num_channels,
         )
 
+        # ******************** Neck and Head ********************
         self.pre_stage_channels = (
             pre_stage_channels  # pre_stage_channels = [32, 64, 128, 256]
         )
@@ -392,10 +399,10 @@ class HighResolutionNet_Classification(nn.Module):
         self.classifier = nn.Linear(in_features=2048, out_features=num_classes)
 
     def _make_layer(self, block, inplanes, planes, num_blocks, stride=1):
+        # 捷径分支
         downsample = None
-        if (
-            stride != 1 or inplanes != planes * block.expansion
-        ):  # bottleneck.expansion=4, basicblock.expansion=1
+        if stride != 1 or inplanes != planes * block.expansion:
+            # bottleneck.expansion=4, basicblock.expansion=1
             downsample = nn.Sequential(
                 nn.Conv2d(
                     in_channels=inplanes,
@@ -412,8 +419,8 @@ class HighResolutionNet_Classification(nn.Module):
         layers = []
         layers.append(
             block(inplanes, planes, stride, downsample)
-        )  # block: bottleneck / basicblock
-        inplanes = planes * block.expansion
+        )  # block: bottleneck or basicblock
+        inplanes = planes * block.expansion  # 更新当前的输入通道数量
         for i in range(1, num_blocks):
             layers.append(block(inplanes, planes))
 
@@ -446,6 +453,7 @@ class HighResolutionNet_Classification(nn.Module):
                 else:
                     transition_layers.append(None)
             else:
+                # Transition 下采样分支 使用3*3对当前尺度最小的分支进行下采样产生新的一个更小尺度分支
                 conv3x3s = [
                     nn.Sequential(  # Conv3x3 s2 p1增加一个分支
                         nn.Conv2d(
@@ -484,7 +492,7 @@ class HighResolutionNet_Classification(nn.Module):
                     num_inchannels,
                     num_channels,
                     multi_scale_output,
-                )  # 不同尺寸的feature maps融合模块
+                )  # 不同尺寸的feature maps 上下采样融合模块
             )
             num_inchannels = modules[-1].get_num_inchannels()
 
@@ -542,7 +550,7 @@ class HighResolutionNet_Classification(nn.Module):
         return incre_modules, downsamp_modules, final_layer
 
     def forward(self, x):
-        # ------ module1 ------ Conv3x3 + Conv3x3 + layer1
+        # ******************** Stage1 ********************
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -550,7 +558,8 @@ class HighResolutionNet_Classification(nn.Module):
         x = self.bn2(x)
         x = self.relu(x)
         x = self.layer1(x)
-        # ------ module2 ------ Transition1 + Stage2
+
+        # ******************** Stage2 (transition1 + (basic_block*4)*1) ********************
         x_list = []
         for i in range(2):
             if self.transition1[i] is not None:
@@ -558,7 +567,8 @@ class HighResolutionNet_Classification(nn.Module):
             else:
                 x_list.append(x)
         y_list = self.stage2(x_list)
-        # ------ module3 ------ Transition2 + Stage3
+
+        # ******************** Stage3 (transition2 + (basicblock*4)*4) ********************
         x_list = []
         for i in range(3):
             if self.transition2[i] is not None:
@@ -569,7 +579,8 @@ class HighResolutionNet_Classification(nn.Module):
             else:
                 x_list.append(y_list[i])
         y_list = self.stage3(x_list)
-        # ------ module4 ------ Transition3 + Stage4
+
+        # ******************** Stage4 (transition3 + (basic_block*4)*3) ********************
         x_list = []
         for i in range(4):
             if self.transition3[i] is not None:
@@ -624,24 +635,37 @@ class hrnet_backbone_classification(nn.Module):
         del self.model.classifier
 
     def forward(self, x):
-        # ------ module1 ------ Conv3x3 + Conv3x3 + layer1
+        # ******************** Stage1 ********************
         x = self.model.conv1(x)  # x(bs, 3, H, W) -> x(bs, 64, H/2, H/2)
         x = self.model.bn1(x)
         x = self.model.relu(x)
         x = self.model.conv2(x)  # x(bs, 64, H/4, W/4)
         x = self.model.bn2(x)
         x = self.model.relu(x)
-        low_level_features = self.model.layer1(x)  # x(bs, 256, H/4, W/4)
-        x = low_level_features
-        # ------ module2 ------ Transition1 + Stage2
+        low_level_features = self.model.layer1(
+            x
+        )  # low_level_features(bs, 256, H/4, W/4)
+        x = low_level_features  # x(bs, 256, H/4, W/4)
+
+        # ******************** Stage2 (transition1 + (basic_block*4)*1) ********************
         x_list = []
         for i in range(2):
             if self.model.transition1[i] is not None:
                 x_list.append(self.model.transition1[i](x))
             else:
                 x_list.append(x)
-        y_list = self.model.stage2(x_list)
-        # ------ module3 ------ Transition2 + Stage3
+        y_list = self.model.stage2(x_list)  # x_list
+        """
+        x_list len=2
+        (B, 32, H/4, W/4)
+        (B, 64, H/8, W/8)
+        
+        y_list len=2
+        (B, 32, H/4, W/4)
+        (B, 64, H/8, W/8)
+        """
+
+        # ******************** Stage3 (transition2 + (basicblock*4)*4) ********************
         x_list = []
         for i in range(3):
             if self.model.transition2[i] is not None:
@@ -652,7 +676,19 @@ class hrnet_backbone_classification(nn.Module):
             else:
                 x_list.append(y_list[i])
         y_list = self.model.stage3(x_list)
-        # ------ module4 ------ Transition3 + Stage4
+        """
+        x_list len=3
+        (B, 32, H/4, W/4)
+        (B, 64, H/8, W/8)
+        (B, 64, H/16, W/16)
+
+        y_list len=3
+        (B, 32, H/4, W/4)
+        (B, 64, H/8, W/8)
+        (B, 64, H/16, W/16)
+        """
+
+        # ******************** Stage4 (transition3 + (basic_block*4)*3) ********************
         x_list = []
         for i in range(4):
             if self.model.transition3[i] is not None:
@@ -663,7 +699,19 @@ class hrnet_backbone_classification(nn.Module):
             else:
                 x_list.append(y_list[i])
         y_list = self.model.stage4(x_list)
-        # ylist[0] (bs, 32, H/4, W/4), ylist[1] (bs, 64, H/8, W/8), ylist[2] (bs, 128, H/16, W/16)  ylist[3] (bs, 256, H/32, W/32)
+        """
+        x_list len=4
+        (bs, 32, H/4, W/4)
+        (bs, 64, H/8, W/8)
+        (bs, 128, H/16, W/16)  
+        (bs, 256, H/32, W/32)
+    
+        y_list len=4
+        (bs, 32, H/4, W/4)
+        (bs, 64, H/8, W/8)
+        (bs, 128, H/16, W/16)  
+        (bs, 256, H/32, W/32)
+        """
         return y_list, low_level_features
 
 
@@ -701,13 +749,13 @@ class HRNet_Backbone(nn.Module):
         )
 
     def forward(self, inputs):
+        # ******************** Backbone ********************
         H, W = inputs.size(2), inputs.size(3)  # inputs(bs, 3, H, W)
-        x, low_level_features = self.backbone(
-            inputs
-        )  # x0(B, 32, H/4, W/4), x1(B, 64, H/8, W/8), x2(B, 128, H/16, W/16), x3(B, 256, H/32, W/32)
+        x, low_level_features = self.backbone(inputs)
+        # x0(B, 32, H/4, W/4), x1(B, 64, H/8, W/8), x2(B, 128, H/16, W/16), x3(B, 256, H/32, W/32)
         # low_level_features(B,256,H/4,W/4)
 
-        # Upsampling
+        # ******************** Upsampling ********************
         x0_h, x0_w = x[0].size(2), x[0].size(3)  # H/4, W/4
         x1 = F.interpolate(
             input=x[1], size=(x0_h, x0_w), mode="bilinear", align_corners=True
@@ -718,9 +766,10 @@ class HRNet_Backbone(nn.Module):
         x3 = F.interpolate(
             input=x[3], size=(x0_h, x0_w), mode="bilinear", align_corners=True
         )  # x3(B, 256, H/4, W/4)
-        # Concat feature maps
-        x = torch.cat(tensors=[x[0], x1, x2, x3], dim=1)  # x(B, 480, H/4, W/4)
-        # Fusion Convolution (main branch)
-        x = self.last_layer(x)  # x(B, last_inp_channels, H/4, W/4)
 
+        # ******************** Concat feature maps ********************
+        x = torch.cat(tensors=[x[0], x1, x2, x3], dim=1)  # x(B, 480, H/4, W/4)
+
+        # ******************** Fusion Convolution (main branch) ********************
+        x = self.last_layer(x)  # x(B, last_inp_channels, H/4, W/4)
         return low_level_features, x

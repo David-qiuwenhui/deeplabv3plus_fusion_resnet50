@@ -23,6 +23,7 @@ model_cfg = dict(
     # ---------- 数据集超参数 -----------
     data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
+    # xception, mobilenet, resnet50, resnext50, repvgg, hrnet, swin_transformer, mobilevit, mobilenetv3
     backbone="mobilenetv3",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
@@ -44,7 +45,7 @@ model_cfg = dict(
     freeze_epochs=0,
     unfreeze_epochs=500,
     # ---------- 训练的优化器超参数 ----------
-    optimizer="sgd",  # "sgd", "adam"
+    optimizer="adam",  # "sgd", "adam"
     # init_lr=1e-2,  # initial learning rate adam: 5e-4, sgd: 7e-3
     momentum=0.9,
     weight_decay=1e-4,  # weight decay (default: 1e-4)
@@ -105,11 +106,11 @@ def main(model_cfg):
 
     # 根据训练优化器的类型设定初始学习率
     if optimizer_type == "sgd":
-        # Init_lr = 7e-3  # 0.007
         Init_lr = 0.1 * Unfreeze_batch_size / 256
+        # Init_lr = 7e-3  # 0.007
     elif optimizer_type == "adam":
-        # Init_lr = 5e-4  # 0.0005
         Init_lr = 5e-4 * Unfreeze_batch_size / 64  # B=16, Init_lr=0.000125
+        # Init_lr = 5e-4  # 0.0005
     Min_lr = Init_lr * 0.01
 
     save_period = model_cfg["save_freq"]  # 多少个epoch保存一次权值
