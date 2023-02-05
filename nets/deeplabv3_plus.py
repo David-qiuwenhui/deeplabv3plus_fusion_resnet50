@@ -240,7 +240,7 @@ class DeepLab(nn.Module):
             # ----------------------------------#
             #   获得两个特征层
             #   主干部分    [2560,H/8,W/8]
-            #   浅层特征    [320,H/4,W/4]
+            #   浅层特征    [320,H/8,W/8]
             # ----------------------------------#
             self.backbone = repvgg_backbone(model_type="repvgg_B2g4_new")
 
@@ -251,11 +251,11 @@ class DeepLab(nn.Module):
             # ----------------------------------#
             #   获得两个特征层
             #   主干部分    [2560,H/8,W/8]
-            #   浅层特征    [320,H/4,W/4]
+            #   浅层特征    [160,H/4,W/4]
             # ----------------------------------#
             self.backbone = repvgg_backbone_new(model_type="RepVGG-B2g4-new")
             in_channels = 2560  # 主干部分的特征
-            low_level_channels = 320  # 浅层次特征
+            low_level_channels = 160  # 浅层次特征
 
         elif backbone == "hrnet":
             # ----------------------------------#
@@ -372,10 +372,10 @@ class DeepLab(nn.Module):
             low_level_features = features["low_features"]  # (B, 256, H/4, W/4)
             x = features["main"]  # (B, 2048, H/8, W/8)
 
-        x = self.aspp(x)  # x(bs, 256, 64, 64)
+        x = self.aspp(x)  # x(bs, 256, H/8, W/8)
         low_level_features = self.shortcut_conv(
             low_level_features
-        )  # low_level_features(bs, 256, 128, 128)
+        )  # low_level_features(bs, 256, H/4, W/4)
 
         # -----------------------------------------#
         #   将加强特征边上采样
@@ -386,11 +386,11 @@ class DeepLab(nn.Module):
             size=(low_level_features.size(2), low_level_features.size(3)),
             mode="bilinear",
             align_corners=True,
-        )  # x(bs, 256, 64, 64) -> x(bs, 256, 128, 128)
+        )  # x(bs, 256, H/8, W/8) -> x(bs, 256, H/4, W/4)
         x = self.cat_conv(
-            torch.cat((x, low_level_features), dim=1)  # (bs,304,128,128)
-        )  # x(bs, 256, 128, 128)
-        x = self.cls_conv(x)  # x(bs, num_classes, 128, 128)
+            torch.cat((x, low_level_features), dim=1)  # (bs,304,H/4,W/4)
+        )  # x(bs, 256, H/4, W/4)
+        x = self.cls_conv(x)  # x(bs, num_classes, H/4, W/4)
         x = F.interpolate(
             input=x, size=(H, W), mode="bilinear", align_corners=True
         )  # x(bs, num_classes, H, W)

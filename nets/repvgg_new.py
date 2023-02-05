@@ -333,7 +333,7 @@ class RepVGG(nn.Module):
 
     def forward(self, x):
         out = self.stage0(x)
-        low_level_index = 1
+        low_level_index = 0
         stages = [self.stage1, self.stage2, self.stage3, self.stage4]
         for index, stage in enumerate(stages):
             for block in stage:
