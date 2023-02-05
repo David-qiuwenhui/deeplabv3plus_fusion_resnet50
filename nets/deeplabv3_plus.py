@@ -5,6 +5,7 @@ from nets.hrnet import HRNet_Backbone, hrnet_classification
 from nets.mobilenetv3 import mobilenet_v3_large_backbone
 from nets.mobilevit import mobile_vit_small_backbone
 from nets.repvgg import repvgg_backbone
+from nets.repvgg_new import repvgg_backbone_new
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
 from nets.swin_transformer import Swin_Transformer_Backbone
@@ -246,6 +247,16 @@ class DeepLab(nn.Module):
             in_channels = 2560  # 主干部分的特征
             low_level_channels = 320  # 浅层次特征
 
+        elif backbone == "repvgg_new":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [2560,H/8,W/8]
+            #   浅层特征    [320,H/4,W/4]
+            # ----------------------------------#
+            self.backbone = repvgg_backbone_new(model_type="RepVGG-B2g4-new")
+            in_channels = 2560  # 主干部分的特征
+            low_level_channels = 320  # 浅层次特征
+
         elif backbone == "hrnet":
             # ----------------------------------#
             #   获得两个特征层
@@ -349,6 +360,7 @@ class DeepLab(nn.Module):
             "xception",
             "mobilenet",
             "repvgg",
+            "repvgg_new",
             "hrnet",
             "swin_transformer",
             "mobilevit",

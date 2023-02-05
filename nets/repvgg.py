@@ -94,8 +94,8 @@ class RepVGGBlock(BaseModule):
                 padding_mode=padding_mode,
             )
         else:
-            # judge if input shape and output shape are the same.
-            # If true, add a normalized identity shortcut.
+            # 判断输入和输出的特征图维度是否相同，若相同添加 batchNorm 分支
+            # 若相同添加 batchNorm 分支
             if out_channels == in_channels and stride == 1 and padding == dilation:
                 self.branch_norm = build_norm_layer(norm_cfg, in_channels)[1]
             else:
@@ -459,8 +459,8 @@ class RepVGG(BaseModule):
 
         channels = min(64, int(base_channels * self.arch["width_factor"][0]))
         self.stem = RepVGGBlock(
-            self.in_channels,
-            channels,
+            in_channels=self.in_channels,
+            out_channels=channels,
             stride=2,
             se_cfg=arch["se_cfg"],
             with_cp=with_cp,
@@ -503,7 +503,7 @@ class RepVGG(BaseModule):
         next_create_block_idx,
         init_cfg,
     ):
-        strides = [stride] + [1] * (num_blocks - 1)
+        strides = [stride] + [1] * (num_blocks - 1)  # 只有第一个block进行两倍下采样
         dilations = [dilation] * num_blocks
 
         blocks = []
@@ -573,7 +573,7 @@ class RepVGG(BaseModule):
         self.deploy = True
 
 
-def repvgg_backbone(model_type=None):
+def repvgg_backbone(model_type):
     model_cfg = repvgg_cfg[model_type]
     backbone = RepVGG(**model_cfg)
     return backbone
