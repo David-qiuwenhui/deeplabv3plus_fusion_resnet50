@@ -36,9 +36,7 @@ def main(model_cfg):
         downsample_factor=downsample_factor,
     ).to(device)
     if deploy:
-        if backbone in ["repvgg"]:
-            model.switch_to_deploy()
-        elif backbone in ["repvgg_new"]:
+        if backbone in ["repvgg_new"]:
             model = repvgg_model_convert(model)
 
     # summary(model, input_size=(3, input_shape[0], input_shape[1]))

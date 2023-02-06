@@ -23,7 +23,7 @@ model_cfg = dict(
     # ---------- 数据集超参数 -----------
     data_path="../../dataset/SUIMdevkit",  # dataset root
     # ---------- 卷积模型超参数 ----------
-    # xception, mobilenet, resnet50, resnext50, repvgg, repvgg_new
+    # xception, mobilenet, resnet50, resnext50, repvgg_new
     # hrnet, swin_transformer, mobilevit, mobilenetv3
     backbone="repvgg_new",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,

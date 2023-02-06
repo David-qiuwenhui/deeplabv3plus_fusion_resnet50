@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from nets.hrnet import HRNet_Backbone, hrnet_classification
 from nets.mobilenetv3 import mobilenet_v3_large_backbone
 from nets.mobilevit import mobile_vit_small_backbone
-from nets.repvgg import repvgg_backbone
 from nets.repvgg_new import repvgg_backbone_new, repvgg_model_convert
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
@@ -236,17 +235,6 @@ class DeepLab(nn.Module):
             in_channels = 2048  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征
 
-        elif backbone == "repvgg":
-            # ----------------------------------#
-            #   获得两个特征层
-            #   主干部分    [2560,H/8,W/8]
-            #   浅层特征    [320,H/8,W/8]
-            # ----------------------------------#
-            self.backbone = repvgg_backbone(model_type="repvgg_B2g4_new")
-
-            in_channels = 2560  # 主干部分的特征
-            low_level_channels = 320  # 浅层次特征
-
         elif backbone == "repvgg_new":
             # ----------------------------------#
             #   获得两个特征层
@@ -359,7 +347,6 @@ class DeepLab(nn.Module):
         if self.backbone_name in [
             "xception",
             "mobilenet",
-            "repvgg",
             "repvgg_new",
             "hrnet",
             "swin_transformer",
@@ -397,12 +384,7 @@ class DeepLab(nn.Module):
         return x
 
     def switch_to_deploy(self):
-        if self.backbone_name in ["repvgg"]:
-            self.backbone.switch_to_deploy()
-            print(
-                f"\033[1;33;44m 🔬🔬🔬🔬 Switch {self.backbone_name} to deploy model \033[0m"
-            )
-        elif self.backbone_name in ["repvgg_new"]:
+        if self.backbone_name in ["repvgg_new"]:
             self.backbone = repvgg_model_convert(model=self.backbone)
             print(
                 f"\033[1;33;44m 🔬🔬🔬🔬 Switch {self.backbone_name} to deploy model \033[0m"
