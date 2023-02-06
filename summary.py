@@ -13,7 +13,9 @@ from nets.repvgg_new import repvgg_model_convert
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="repvgg_new",
+    # xception, mobilenet, resnet50, resnext50, repvgg_new
+    # hrnet, hrnet_new, swin_transformer, mobilevit, mobilenetv3
+    backbone="hrnet_new",
     downsample_factor=8,
     deploy=True,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),

@@ -18,8 +18,10 @@ val_cfg = dict(
     miou_mode=0,  # 0, 1, 2
     mix_type=1,  # 0混合, 1仅原图, 2仅原图中的目标_扣去背景 get_miou不起作用
     # ---------- 卷积模型的参数 ----------
-    model_path="./logs/repvgg_new/13_DeepLabV3Plus_Fusion2_RepVGG_B2g4new_8_8_500epochs_bs16_lr6.25e-3/best_epoch_weights.pth",
-    backbone="repvgg_new",
+    model_path="./logs/hrnet_new/best_epoch_weights.pth",
+    # xception, mobilenet, resnet50, resnext50, repvgg_new
+    # hrnet, hrnet_new, swin_transformer, mobilevit, mobilenetv3
+    backbone="hrnet_new",
     aux_branch=False,
     num_classes=7,
     name_classes=[
@@ -37,8 +39,8 @@ val_cfg = dict(
     cuda=True,
     # ---------- 文件夹的位置参数 ----------
     dataset_path="../../dataset/SUIMdevkit",
-    file_name="train.txt",
-    save_file_dir="./miou_out_train",
+    file_name="val.txt",
+    save_file_dir="./miou_out_val",
 )
 
 

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from nets.hrnet import HRNet_Backbone, hrnet_classification
+from nets.hrnet_new import HRNet_Backbone_New
 from nets.mobilenetv3 import mobilenet_v3_large_backbone
 from nets.mobilevit import mobile_vit_small_backbone
 from nets.repvgg_new import repvgg_backbone_new, repvgg_model_convert
@@ -257,6 +258,17 @@ class DeepLab(nn.Module):
             in_channels = 480  # 主干部分的特征
             low_level_channels = 256  # 浅层次特征
 
+        elif backbone == "hrnet_new":
+            # ----------------------------------#
+            #   获得两个特征层
+            #   主干部分    [32,H/4,W/4]
+            #   浅层特征    [256,H/4,W/4]
+            #   注意：hrnet_new 的深浅层次融合特征尺寸是相同的
+            # ----------------------------------#
+            self.backbone = HRNet_Backbone_New(model_type="hrnet_w32")
+            in_channels = 32  # 主干部分的特征
+            low_level_channels = 256  # 浅层次特征
+
         elif backbone == "swin_transformer":
             # ----------------------------------#
             #   获得两个特征层
@@ -352,6 +364,7 @@ class DeepLab(nn.Module):
             "swin_transformer",
             "mobilevit",
             "mobilenetv3",
+            "hrnet_new",
         ]:
             low_level_features, x = self.backbone(x)
         elif self.backbone_name in ["resnet50", "resnext50"]:
