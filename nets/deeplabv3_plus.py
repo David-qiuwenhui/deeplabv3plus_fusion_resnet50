@@ -5,7 +5,7 @@ from nets.hrnet import HRNet_Backbone, hrnet_classification
 from nets.mobilenetv3 import mobilenet_v3_large_backbone
 from nets.mobilevit import mobile_vit_small_backbone
 from nets.repvgg import repvgg_backbone
-from nets.repvgg_new import repvgg_backbone_new
+from nets.repvgg_new import repvgg_backbone_new, repvgg_model_convert
 from nets.resnet import resnet50_backbone
 from nets.resnext import resnext50_32x4d_backbone
 from nets.swin_transformer import Swin_Transformer_Backbone
@@ -397,5 +397,15 @@ class DeepLab(nn.Module):
         return x
 
     def switch_to_deploy(self):
-        self.backbone.switch_to_deploy()
-        print(f"\033[1;33;44m 🔬🔬🔬🔬 Switch to deploy model \033[0m")
+        if self.backbone_name in ["repvgg"]:
+            self.backbone.switch_to_deploy()
+            print(
+                f"\033[1;33;44m 🔬🔬🔬🔬 Switch {self.backbone_name} to deploy model \033[0m"
+            )
+        elif self.backbone_name in ["repvgg_new"]:
+            self.backbone = repvgg_model_convert(model=self.backbone)
+            print(
+                f"\033[1;33;44m 🔬🔬🔬🔬 Switch {self.backbone_name} to deploy model \033[0m"
+            )
+        else:
+            print(f"\033[1;31;41m 🔬🔬🔬🔬 Can not Switch to deploy model \033[0m")

@@ -349,6 +349,13 @@ class RepVGG(nn.Module):
         # out = self.linear(out)
         return low_level_features, out
 
+    # TODO: 函数本身存在循环调用溢出的bug
+    # def switch_to_deploy(self):
+    #     for module in self.modules():
+    #         if hasattr(module, "switch_to_deploy"):
+    #             module.switch_to_deploy()
+    #     self.deploy = True
+
 
 optional_groupwise_layers = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
 g2_map = {l: 2 for l in optional_groupwise_layers}
@@ -570,3 +577,9 @@ def repvgg_model_convert(model: torch.nn.Module, save_path=None, do_copy=True):
 
 def repvgg_backbone_new(model_type):
     return func_dict[model_type](deploy=False, use_checkpoint=False)
+
+
+# model = repvgg_backbone_new(model_type="RepVGG-B2g4-new")
+# print(model)
+# new_model = repvgg_model_convert(model)
+# print(new_model)

@@ -3,6 +3,7 @@ from thop import clever_format, profile
 from torchsummary import summary
 
 from nets.deeplabv3_plus import DeepLab
+from nets.repvgg_new import repvgg_model_convert
 
 
 # --------------------------------------------#
@@ -12,9 +13,9 @@ from nets.deeplabv3_plus import DeepLab
 model_cfg = dict(
     input_shape=[512, 512],
     num_classes=7,
-    backbone="mobilenetv3",
+    backbone="repvgg_new",
     downsample_factor=8,
-    deploy=False,
+    deploy=True,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 )
 
@@ -34,6 +35,12 @@ def main(model_cfg):
         pretrained=False,
         downsample_factor=downsample_factor,
     ).to(device)
+    if deploy:
+        if backbone in ["repvgg"]:
+            model.switch_to_deploy()
+        elif backbone in ["repvgg_new"]:
+            model = repvgg_model_convert(model)
+
     # summary(model, input_size=(3, input_shape[0], input_shape[1]))
 
     dummy_input = torch.randn(1, 3, input_shape[0], input_shape[1]).to(device)
