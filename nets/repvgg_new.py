@@ -204,6 +204,7 @@ class RepVGGBlock(nn.Module):
         )
 
     def _pad_1x1_to_3x3_tensor(self, kernel1x1):
+        # 将1*1卷积层填充成3*3卷积层
         if kernel1x1 is None:
             return 0
         else:
@@ -213,15 +214,20 @@ class RepVGGBlock(nn.Module):
         if branch is None:
             return 0, 0
         if isinstance(branch, nn.Sequential):
+            # 3*3和1*1卷积分支 包含卷结层和批量标准化层
+            # 卷积核权重参数
             kernel = branch.conv.weight
+            # 批量标准化核的均值、方差、放大倍率gamma和偏移量beta参数
             running_mean = branch.bn.running_mean
             running_var = branch.bn.running_var
             gamma = branch.bn.weight
             beta = branch.bn.bias
-            eps = branch.bn.eps
+            eps = branch.bn.eps  # 一个很小的值防止BN计算过程中分母为零
         else:
+            # BN分支 批量标准化层
             assert isinstance(branch, nn.BatchNorm2d)
             if not hasattr(self, "id_tensor"):
+                # 创建等效卷积层
                 input_dim = self.in_channels // self.groups
                 kernel_value = np.zeros(
                     (self.in_channels, input_dim, 3, 3), dtype=np.float32
@@ -229,12 +235,16 @@ class RepVGGBlock(nn.Module):
                 for i in range(self.in_channels):
                     kernel_value[i, i % input_dim, 1, 1] = 1
                 self.id_tensor = torch.from_numpy(kernel_value).to(branch.weight.device)
+            # nn.Indentity层的等效卷积核参数
             kernel = self.id_tensor
+            # 批量标准化核的均值、方差、放大倍率gamma和偏移量beta参数
             running_mean = branch.running_mean
             running_var = branch.running_var
             gamma = branch.weight
             beta = branch.bias
-            eps = branch.eps
+            eps = branch.eps  # 一个很小的值防止BN计算过程中分母为零
+
+        # 3*3卷积分支、1*1卷积分支、批量标准化分支的等效权重和偏执参数
         std = (running_var + eps).sqrt()
         t = (gamma / std).reshape(-1, 1, 1, 1)
         return kernel * t, beta - running_mean * gamma / std
@@ -242,7 +252,9 @@ class RepVGGBlock(nn.Module):
     def switch_to_deploy(self):
         if hasattr(self, "rbr_reparam"):
             return
+        # 获得等效合并分支的卷积核权重和偏执参数
         kernel, bias = self.get_equivalent_kernel_bias()
+        # 构造等效合并分支的卷积核 权重和偏执
         self.rbr_reparam = nn.Conv2d(
             in_channels=self.rbr_dense.conv.in_channels,
             out_channels=self.rbr_dense.conv.out_channels,
@@ -253,8 +265,10 @@ class RepVGGBlock(nn.Module):
             groups=self.rbr_dense.conv.groups,
             bias=True,
         )
+        # 将等效合并分支参数载入卷积核
         self.rbr_reparam.weight.data = kernel
         self.rbr_reparam.bias.data = bias
+        # 删除原来的多分支卷积核
         self.__delattr__("rbr_dense")
         self.__delattr__("rbr_1x1")
         if hasattr(self, "rbr_identity"):
@@ -311,10 +325,12 @@ class RepVGG(nn.Module):
         # self.linear = nn.Linear(int(512 * width_multiplier[3]), num_classes)
 
     def _make_stage(self, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
+        strides = [stride] + [1] * (num_blocks - 1)  # 只有第一个卷积模型需要进行上采样
         blocks = []
         for stride in strides:
-            cur_groups = self.override_groups_map.get(self.cur_layer_idx, 1)
+            cur_groups = self.override_groups_map.get(
+                self.cur_layer_idx, 1
+            )  # 查询是否需要进行组卷积计算
             blocks.append(
                 RepVGGBlock(
                     in_channels=self.in_planes,

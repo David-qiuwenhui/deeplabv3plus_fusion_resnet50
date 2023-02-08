@@ -25,7 +25,7 @@ model_cfg = dict(
     # ---------- 卷积模型超参数 ----------
     # xception, mobilenet, resnet50, resnext50, repvgg_new
     # hrnet, hrnet_new, swin_transformer, mobilevit, mobilenetv3
-    backbone="hrnet_new",  #  所使用的的主干网络 "mobilenet", "xception"
+    backbone="repvgg_new",  #  所使用的的主干网络 "mobilenet", "xception"
     num_classes=7,
     input_shape=[512, 512],  # the size of input image
     downsample_factor=8,

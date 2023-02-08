@@ -18,10 +18,10 @@ val_cfg = dict(
     miou_mode=0,  # 0, 1, 2
     mix_type=1,  # 0混合, 1仅原图, 2仅原图中的目标_扣去背景 get_miou不起作用
     # ---------- 卷积模型的参数 ----------
-    model_path="./logs/hrnet_new/best_epoch_weights.pth",
+    model_path="./logs/repvgg_new/14_DeepLabV3Plus_Fusion2_RepVGG_B2g4new_4_8_500epochs_bs16_lr6.25e-3/best_epoch_weights.pth",
     # xception, mobilenet, resnet50, resnext50, repvgg_new
     # hrnet, hrnet_new, swin_transformer, mobilevit, mobilenetv3
-    backbone="hrnet_new",
+    backbone="repvgg_new",
     aux_branch=False,
     num_classes=7,
     name_classes=[
